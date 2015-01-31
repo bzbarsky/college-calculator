@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script>
+      function childEntryCount(childInfo) {
+        // Subtract 1, because we have the <legend> in there.
+        /* compat issue: old browsers don't have .childElementCount */
+        return childInfo.childElementCount - 1;
+      }
+      function ensureChildInfoCount(numChildren) {
+        var childInfo = document.getElementById("childInfo");
+        while (childEntryCount(childInfo) > numChildren) {
+          /* compat issue: old browsers don't have remove(). */
+          childInfo.lastChild.remove();
+        }
+        var childTemplate = document.getElementById("oneChild").content;
+        while (childEntryCount(childInfo) < numChildren) {
+          childNumber = childEntryCount(childInfo) + 1;
+          var child = childTemplate.cloneNode(true);
+          child.querySelector(".childNumber").textContent = childNumber;
+          /* compat issue: old browsers don't have for-of loops. */
+          for (node of child.querySelectorAll("input[name]")) {
+            node.name += childNumber;
+          }
+          childInfo.appendChild(child);
+        }
+      }
+
+      function restoreStateFromLocation() {
+          /* compat issue: old browsers don't have URLSearchParams */
+          var params = new URLSearchParams(location.search.substring(1));
+          numChildren = params.get("childcount");
+          document.querySelector("input[name=childcount]").value = numChildren;
+          numChildren = parseInt(numChildren);
+          ensureChildInfoCount(numChildren);
+          for (child = 1; child <= numChildren; ++child) {
+              /* compat issue: old browsers don't support `` strings. */
+              /* compat issue: old browsers don't support for-of loops. */
+              for (var inputName of [`matriculation-${child}`, `years-${child}`]) {
+                  document.querySelector(`input[name=${inputName}]`).value =
+                      params.get(inputName);
+              }
+          }
+      }
+
+      window.onload = function() {
+          if (!location.search) {
+              // Nothing to initialize with.
+              return
+          }
+
+          restoreStateFromLocation();
+          calculate();
+      }
+    </script>
+    <style>
+      .oneChild > label { display: block }
+    </style>
+  </head>
+  <body>
+    <!-- compat issue: old browsers don't have <template> elements -->
+    <template id="oneChild">
+      <fieldset class="oneChild">
+        <legend>Child <span class="childNumber"></span></legend>
+        <label>
+          Year child will start college:
+          <input required name="matriculation-" type="number">
+        </label> 
+        <label>
+          Years in college:
+          <input required name="years-" type="number" min="1">
+        </label>
+      </fieldset>
+    </template>
+    <form action="">
+      <fieldset id="childInfo">
+        <legend>
+          <label>
+            Number of children:
+            <input required type="number" name="childcount"
+                   onchange="ensureChildInfoCount(this.value)">
+          </label>
+        </legend>
+      </fieldset>
+      <input type="submit" value="Calculate">
+    </form>
+  </body>
+</html>
