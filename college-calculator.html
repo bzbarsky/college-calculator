@@ -2,6 +2,11 @@
 <html>
   <head>
     <script>
+      // Support for having this be an embedded widget of some sort
+      function calculatorRoot() {
+        return document.body;
+      }
+
       var initialChildInfoChildElementCount; // initialized onload.
       function childEntryCount(childInfo) {
         // Subtract 1, because we have the <legend> in there.
@@ -10,16 +15,17 @@
       }
 
       function ensureChildInfoCount(numChildren) {
-        var childInfo = document.getElementById("childInfo");
+        var childInfo = calculatorRoot().querySelector("#childInfo");
         while (childEntryCount(childInfo) > numChildren) {
           /* compat issue: old browsers don't have remove(). */
           childInfo.lastChild.remove();
         }
-        var childTemplate = document.getElementById("oneChild").content;
+        var childTemplate = calculatorRoot().querySelector("#oneChild").content;
         while (childEntryCount(childInfo) < numChildren) {
           childNumber = childEntryCount(childInfo) + 1;
           var child = childTemplate.cloneNode(true);
           child.querySelector(".childNumber").textContent = childNumber;
+          child.querySelector(".currentYear").textContent = (new Date).getFullYear();
           /* compat issue: old browsers don't have for-of loops. */
           for (node of child.querySelectorAll("input[name]")) {
             node.name += childNumber;
@@ -28,27 +34,35 @@
         }
       }
 
+      function restoreInputs(names, params) {
+        /* compat issue: old browsers don't support for-of loops. */
+        for (var inputName of names) {
+          /* compat issue: old browsers don't support `` strings. */
+          calculatorRoot().querySelector(`input[name=${inputName}]`).value =
+            params.get(inputName);
+        }
+      }
       function restoreStateFromLocation() {
         /* compat issue: old browsers don't have URLSearchParams */
         var params = new URLSearchParams(location.search.substring(1));
         numChildren = params.get("childcount");
-        document.querySelector("input[name=childcount]").value = numChildren;
+        calculatorRoot().querySelector("input[name=childcount]").value = numChildren;
         numChildren = parseInt(numChildren);
         ensureChildInfoCount(numChildren);
         for (child = 1; child <= numChildren; ++child) {
           /* compat issue: old browsers don't support `` strings. */
-          /* compat issue: old browsers don't support for-of loops. */
-          for (var inputName of [`matriculation-${child}`, `years-${child}`]) {
-            document.querySelector(`input[name=${inputName}]`).value =
-              params.get(inputName);
-          }
+          restoreInputs([`matriculation-${child}`, `years-${child}`,
+                         `collegecost-${child}`],
+                        params);
         }
+
+        restoreInputs(["tuition-inflation"], params);
       }
 
       window.onload = function() {
         /* compat issue: old browsers don't have .childElementCount */
         initialChildInfoChildElementCount =
-          document.getElementById("childInfo").childElementCount;
+          calculatorRoot().querySelector("#childInfo").childElementCount;
         if (!location.search) {
           // Nothing to initialize with.
           return
@@ -56,6 +70,9 @@
 
         restoreStateFromLocation();
         calculate();
+      }
+
+      function calculate() {
       }
     </script>
     <style>
@@ -75,6 +92,10 @@
           Years in college:
           <input required name="years-" type="number" min="1">
         </label>
+        <label>
+          Annual cost of desired college type in <span class="currentYear"></span>:
+          $<input required name="collegecost-" type="number">
+        </label>
       </fieldset>
     </template>
     <form action="">
@@ -86,6 +107,12 @@
                    onchange="ensureChildInfoCount(this.value)">
           </label>
         </legend>
+      </fieldset>
+      <fieldset id="costs">
+        <legend>Costs</legend>
+        Annual inflation-adjusted tuition increase:
+        <input type="number" required step="0.1" value="6"
+               name="tuition-inflation">%.
       </fieldset>
       <input type="submit" value="Calculate">
     </form>
