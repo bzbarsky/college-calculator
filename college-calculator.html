@@ -2,11 +2,13 @@
 <html>
   <head>
     <script>
+      var initialChildInfoChildElementCount; // initialized onload.
       function childEntryCount(childInfo) {
         // Subtract 1, because we have the <legend> in there.
         /* compat issue: old browsers don't have .childElementCount */
-        return childInfo.childElementCount - 1;
+        return childInfo.childElementCount - initialChildInfoChildElementCount;
       }
+
       function ensureChildInfoCount(numChildren) {
         var childInfo = document.getElementById("childInfo");
         while (childEntryCount(childInfo) > numChildren) {
@@ -27,26 +29,28 @@
       }
 
       function restoreStateFromLocation() {
-          /* compat issue: old browsers don't have URLSearchParams */
-          var params = new URLSearchParams(location.search.substring(1));
-          numChildren = params.get("childcount");
-          document.querySelector("input[name=childcount]").value = numChildren;
-          numChildren = parseInt(numChildren);
-          ensureChildInfoCount(numChildren);
-          for (child = 1; child <= numChildren; ++child) {
-              /* compat issue: old browsers don't support `` strings. */
-              /* compat issue: old browsers don't support for-of loops. */
-              for (var inputName of [`matriculation-${child}`, `years-${child}`]) {
-                  document.querySelector(`input[name=${inputName}]`).value =
-                      params.get(inputName);
-              }
+        /* compat issue: old browsers don't have URLSearchParams */
+        var params = new URLSearchParams(location.search.substring(1));
+        numChildren = params.get("childcount");
+        document.querySelector("input[name=childcount]").value = numChildren;
+        numChildren = parseInt(numChildren);
+        ensureChildInfoCount(numChildren);
+        for (child = 1; child <= numChildren; ++child) {
+          /* compat issue: old browsers don't support `` strings. */
+          /* compat issue: old browsers don't support for-of loops. */
+          for (var inputName of [`matriculation-${child}`, `years-${child}`]) {
+            document.querySelector(`input[name=${inputName}]`).value =
+              params.get(inputName);
           }
+        }
       }
 
       window.onload = function() {
+          initialChildInfoChildElementCount =
+            document.getElementById("childInfo").childElementCount;
           if (!location.search) {
-              // Nothing to initialize with.
-              return
+            // Nothing to initialize with.
+            return
           }
 
           restoreStateFromLocation();
