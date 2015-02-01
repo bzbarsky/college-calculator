@@ -46,15 +46,16 @@
       }
 
       window.onload = function() {
-          initialChildInfoChildElementCount =
-            document.getElementById("childInfo").childElementCount;
-          if (!location.search) {
-            // Nothing to initialize with.
-            return
-          }
+        /* compat issue: old browsers don't have .childElementCount */
+        initialChildInfoChildElementCount =
+          document.getElementById("childInfo").childElementCount;
+        if (!location.search) {
+          // Nothing to initialize with.
+          return
+        }
 
-          restoreStateFromLocation();
-          calculate();
+        restoreStateFromLocation();
+        calculate();
       }
     </script>
     <style>
