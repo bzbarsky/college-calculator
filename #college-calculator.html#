@@ -42,7 +42,6 @@
             params.get(inputName);
         }
       }
-
       function restoreStateFromLocation() {
         /* compat issue: old browsers don't have URLSearchParams */
         var params = new URLSearchParams(location.search.substring(1));
@@ -105,12 +104,11 @@
         var tuitions = calculatorRoot().querySelector("#tuitions");
         var attendanceYears = calculatorRoot().querySelector("#attendance-years");
         var totalCost = 0;
-        /* compat issue: old browsers don't have Intl API/ */
+        /* co
         var formatter = new Intl.NumberFormat();
         for (var year = startYear; year < endYear; ++year) {
-          var yearCell = attendanceYears.appendChild(document.createElement("td"));
-          yearCell.textContent = year;
-          yearCell.year = year;
+          attendanceYears.appendChild(document.createElement("td"))
+                         .textContent = year;
           var yearCost = attendanceData.reduce(function(cur, data) {
             if (year >= data.start && year < data.end) {
               cur += Math.round(data.cost *
@@ -119,14 +117,11 @@
             return cur;
           }, 0);
           totalCost += yearCost;
-          var tuitionCell = tuitions.appendChild(document.createElement("td"));
-          tuitionCell.textContent = formatter.format(yearCost);
-          tuitionCell.tuition = yearCost;
+          tuitions.appendChild(document.createElement("td"))
+                  .textContent =
         }
         attendanceYears.appendChild(document.createElement("th"))
                        .textContent = "Total";
-        tuitions.appendChild(document.createElement("th"))
-                .textContent = formatter.format(totalCost);
       }
 
       function calculate() {
