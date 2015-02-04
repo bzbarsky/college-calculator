@@ -34,11 +34,32 @@
         }
       }
 
+      function addResource() {
+        var resources = calculatorRoot().querySelector("#resources");
+        var resourceCounter = resources.querySelector("input[name=resourcecount]");
+        var resourceId = parseInt(resourceCounter.value) + 1;
+        var resource =
+          calculatorRoot().querySelector("#oneResource").content.cloneNode(true);
+        
+        /* compat issue: old browsers don't have for-of loops. */
+        for (node of resource.querySelectorAll("input[name], select[name]")) {
+          node.name += resourceId;
+        }
+        resources.appendChild(resource);
+        resourceCounter.value = resourceId;
+      }
+
+      function removeResource(resource) {
+        var resourceCounter = calculatorRoot().querySelector("input[name=resourcecount]");
+        resourceCounter.value = parseInt(resourceCounter.value) - 1;
+        resource.remove();
+      }
+
       function restoreInputs(names, params) {
         /* compat issue: old browsers don't support for-of loops. */
         for (var inputName of names) {
           /* compat issue: old browsers don't support `` strings. */
-          calculatorRoot().querySelector(`input[name=${inputName}]`).value =
+          calculatorRoot().querySelector(`input[name=${inputName}], select[name=${inputName}]`).value =
             params.get(inputName);
         }
       }
@@ -46,33 +67,50 @@
       function restoreStateFromLocation() {
         /* compat issue: old browsers don't have URLSearchParams */
         var params = new URLSearchParams(location.search.substring(1));
-        numChildren = params.get("childcount");
+        var numChildren = params.get("childcount");
         calculatorRoot().querySelector("input[name=childcount]").value = numChildren;
         numChildren = parseInt(numChildren);
         ensureChildInfoCount(numChildren);
-        for (child = 1; child <= numChildren; ++child) {
+        for (var child = 1; child <= numChildren; ++child) {
           /* compat issue: old browsers don't support `` strings. */
           restoreInputs([`matriculation-${child}`, `years-${child}`,
                          `collegecost-${child}`],
                         params);
         }
 
-        restoreInputs(["tuition-inflation"], params);
+        restoreInputs(["tuition-inflation", "payment-from-income"], params);
+
+        var numResources = parseInt(params.get("resourcecount"));
+        // We'll store this number in our hidden input as we add our resources.
+        for (var resource = 1; resource <= numResources; ++resource) {
+          addResource();
+          /* compat issue: old browsers don't support `` strings. */
+          restoreInputs([`resource-type-${resource}`,
+                         `resource-balance-${resource}`,
+                         `resource-contribution-${resource}`,
+                         `resource-growth-${resource}`,
+                         `resource-priority-${resource}`,
+                        ],
+                        params);
+        }
       }
 
       window.onload = function() {
         /* compat issue: old browsers don't have .childElementCount */
         initialChildInfoChildElementCount =
           calculatorRoot().querySelector("#childInfo").childElementCount;
+        calculatorRoot().querySelector("input[name=resourcecount]").value = 0;
         if (!location.search) {
           // Nothing to initialize with.
-          return
+          return;
         }
 
         restoreStateFromLocation();
         calculate();
       }
 
+      function getAttendanceData() {
+      }
       function calculateCosts() {
         var childInfo = calculatorRoot().querySelector("#childInfo");
         var matriculationYearInputs =
@@ -129,12 +167,17 @@
                 .textContent = formatter.format(totalCost);
       }
 
+      function calculatePayments() {
+      }
       function calculate() {
         calculateCosts();
+        calculatePayments();
       }
     </script>
     <style>
       .oneChild > label { display: block }
+      .oneResource > label { display: block }
+      #resources > label { display: block }
     </style>
   </head>
   <body>
@@ -156,7 +199,38 @@
         </label>
       </fieldset>
     </template>
-    <form action="">
+    <template id="oneResource">
+      <fieldset class="oneResource">
+        <legend>
+          <select required name="resource-type-">
+            <option value="">Select a resource type</option>
+            <option value="529">529 Plan</option>
+            <option value="Roth">Roth IRA</option>
+            <option value="Other">Taxable asset</option>
+          </select>
+        </legend>
+        <input type="button" value="Remove" style="float: right"
+               onclick="removeResource(this.parentNode)">
+        <label>
+          Current balance:
+          <input type="number" required value="0" name="resource-balance-">
+        </label>
+        <label>
+          Annual contribution:
+          <input type="number" required value="0" name="resource-contribution-">
+        </label>
+        <label>
+          Inflation-adjusted annual growth rate:
+          <input type="number" required step="0.1" value="4"
+                 name="resource-growth-">%
+        </label>
+        <label>
+          Resource spending priority:
+          <input type="number" required name="resource-priority-" value="1">
+        </label>
+      </fieldset>
+    </template>
+    <form action="#summary-table">
       <fieldset id="childInfo">
         <legend>
           <label>
@@ -173,15 +247,24 @@
         Annual inflation-adjusted tuition increase:
         <input type="number" required step="0.1" value="6"
                name="tuition-inflation">%.
-        <table id="tuition-table" border>
-          <tr id="attendance-years">
-            <th>Year</th>
-          </tr>
-          <tr id="tuitions">
-            <th>Cost of attendance</th>
-          </tr>
-        </table>
       </fieldset>
+      <fieldset id="resources">
+        <label>
+          Amount to be paid annually out of income:
+          <input type="number" required value="0" name="payment-from-income">
+        </label>
+        <input type="hidden" name="resourcecount" value="0">
+        <input type="button" value="Add a financial resource"
+               onclick="addResource()">
+      </fieldset>
+      <table id="summary-table" border>
+        <tr id="attendance-years">
+          <th>Year</th>
+        </tr>
+        <tr id="tuitions">
+          <th>Cost of attendance</th>
+        </tr>
+      </table>
       <input type="submit" value="Calculate">
     </form>
   </body>
