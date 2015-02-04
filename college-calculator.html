@@ -110,8 +110,6 @@
       }
 
       function getAttendanceData() {
-      }
-      function calculateCosts() {
         var childInfo = calculatorRoot().querySelector("#childInfo");
         var matriculationYearInputs =
           childInfo.querySelectorAll('input[name^="matriculation-"]');
@@ -137,7 +135,15 @@
         var startYear = Math.max(thisYear,
                                  Math.min.apply(null, matriculationYears));
         var endYear = Math.max(thisYear, Math.max.apply(null, completionYears));
+        return { attendanceData: attendanceData,
+                 thisYear: thisYear,
+                 startYear: startYear,
+                 endYear: endYear }
+      }
 
+      function calculateCosts() {
+        /* compat issue: old browsers don't support destructuring assignment. */
+        var { attendanceData, thisYear, startYear, endYear } = getAttendanceData();
         var yearlyTuitionMultiplier =
           1 + calculatorRoot().querySelector("input[name=tuition-inflation]").valueAsNumber / 100;
         var tuitions = calculatorRoot().querySelector("#tuitions");
@@ -167,8 +173,103 @@
                 .textContent = formatter.format(totalCost);
       }
 
-      function calculatePayments() {
+      function findLowestPriorityResources(resources) {
+        /* compat issue: arrow functions. */
+        var lowestPriority = Math.min.apply(null, resources.map((r) => r.priority));
+        if (lowestPriority == Infinity) {
+          // Everything is gone.
+          return [];
+        }
+        return resources.filter((r) => r.priority == lowestPriority);
       }
+
+      function calculatePayments() {
+        /* compat issue: old browsers don't support destructuring assignment. */
+        var { attendanceData, thisYear, startYear, endYear } = getAttendanceData();
+        var resources = calculatorRoot().querySelectorAll(".oneResource");
+        resources = Array.prototype.map.call(resources, function(resource) {
+          var balance =
+            resource.querySelector("input[name^='resource-balance-']").valueAsNumber;
+          var contribution =
+            resource.querySelector("input[name^='resource-contribution-']").valueAsNumber;
+          var growth =
+            resource.querySelector("input[name^='resource-growth-']").valueAsNumber;
+          for (var year = thisYear; year < startYear; ++year) {
+            balance = Math.round(balance * (1 + growth / 100) + contribution);
+          }
+          return {
+            type: resource.querySelector("select[name^='resource-type-']").value,
+            balance: balance,
+            contribution: contribution,
+            growth: growth,
+            priority: resource.querySelector("input[name^='resource-priority-']").valueAsNumber
+          };
+        });
+
+        var table = calculatorRoot().querySelector("#summary-table");
+        /* compat issue: for-of loop. */
+        for (var resource of resources) {
+          var row = table.insertRow();
+          resource.row = row;
+          row.appendChild(document.createElement("th")).textContent = resource.type + " Balance";
+        }
+
+        var shortFalls = table.insertRow();
+        shortFalls.appendChild(document.createElement("th")).textContent = "Shortfall";
+
+        var incomePayment =
+          calculatorRoot().querySelector("input[name='payment-from-income']").valueAsNumber;
+        tuitions = Array.prototype.map.call(
+          calculatorRoot().querySelector("#tuitions").cells,
+          function (cell) { return cell.tuition; }
+        ).slice(1); // slice off the heading
+
+        var formatter = new Intl.NumberFormat();
+
+        for (var year = startYear; year < endYear; ++year) {
+          // Assume that stuff is still growing, but we're not depositing anymore.
+          /* compat issue: for-of loop */
+          for (var resource of resources) {
+            resource.balance = Math.round(resource.balance * (1 + resource.growth / 100));
+            resource.row.insertCell().textContent = formatter.format(resource.balance);
+          }
+
+          var tuition = tuitions[year - startYear];
+          tuition -= incomePayment;
+
+          while (tuition) {
+            var candidates = findLowestPriorityResources(resources);
+            if (candidates.length == 0) {
+              // We ran out of money
+              break;
+            }
+            /* compat issue: for-of loop */
+            var perCandidateTuition = Math.ceil(tuition / candidates.length);
+            for (var candidate of candidates) {
+              // Due to rounding, it's possible that
+              // perCandidateTuition > tuition here.  Clamp it.
+              perCandidateTuition = Math.min(perCandidateTuition, tuition);
+              if (perCandidateTuition >= candidate.balance) {
+                tuition -= candidate.balance;
+                candidate.balance = 0;
+                candidate.priority = Infinity; // So it will never get looked at again
+              } else {
+                candidate.balance -= perCandidateTuition;
+                tuition -= perCandidateTuition;
+              }
+            }
+          }
+
+          shortFalls.insertCell().textContent = formatter.format(tuition);
+        }
+
+        /* compat issue: for-of loop */
+        for (var resource of resources) {
+          /* compat issue: old browsers don't have Intl API/ */
+          resource.row.insertCell().textContent = formatter.format(resource.balance);
+        }
+      }
+
       function calculate() {
         calculateCosts();
         calculatePayments();
