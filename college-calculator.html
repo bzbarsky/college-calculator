@@ -216,6 +216,7 @@
 
         var shortFalls = table.insertRow();
         shortFalls.appendChild(document.createElement("th")).textContent = "Shortfall";
+        var totalShortfall = 0;
 
         var incomePayment =
           calculatorRoot().querySelector("input[name='payment-from-income']").valueAsNumber;
@@ -260,6 +261,7 @@
             }
           }
 
+          totalShortfall += tuition;
           shortFalls.insertCell().textContent = formatter.format(tuition);
         }
 
@@ -268,6 +270,7 @@
           /* compat issue: old browsers don't have Intl API/ */
           resource.row.insertCell().textContent = formatter.format(resource.balance);
         }
+        shortFalls.insertCell().textContent = formatter.format(totalShortfall);
       }
 
       function calculate() {
