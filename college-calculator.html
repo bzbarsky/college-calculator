@@ -342,7 +342,8 @@
             <!-- compat issue: old browsers don't support .valueAsNumber; need
                  to parseInt(foo.value or something. -->
             <input required type="number" name="childcount"
-                   onchange="ensureChildInfoCount(this.valueAsNumber)">
+                   onchange="ensureChildInfoCount(this.valueAsNumber)"
+                   min="1">
           </label>
         </legend>
       </fieldset>
