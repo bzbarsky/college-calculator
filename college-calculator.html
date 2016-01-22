@@ -152,7 +152,7 @@
         /* compat issue: old browsers don't have Intl API/ */
         var formatter = new Intl.NumberFormat();
         for (var year = startYear; year < endYear; ++year) {
-          var yearCell = attendanceYears.appendChild(document.createElement("td"));
+          var yearCell = attendanceYears.insertCell();
           yearCell.textContent = year;
           yearCell.year = year;
           var yearCost = attendanceData.reduce(function(cur, data) {
@@ -163,7 +163,7 @@
             return cur;
           }, 0);
           totalCost += yearCost;
-          var tuitionCell = tuitions.appendChild(document.createElement("td"));
+          var tuitionCell = tuitions.insertCell();
           tuitionCell.textContent = formatter.format(yearCost);
           tuitionCell.tuition = yearCost;
         }
@@ -218,8 +218,9 @@
         shortFalls.appendChild(document.createElement("th")).textContent = "Shortfall";
         var totalShortfall = 0;
 
-        var incomePayment =
+        var maxIncomePayment =
           calculatorRoot().querySelector("input[name='payment-from-income']").valueAsNumber;
+        var incomePayments = calculatorRoot().querySelector("#incomePayments");
         tuitions = Array.prototype.map.call(
           calculatorRoot().querySelector("#tuitions").cells,
           function (cell) { return cell.tuition; }
@@ -236,7 +237,9 @@
           }
 
           var tuition = tuitions[year - startYear];
+          var incomePayment = Math.min(maxIncomePayment, tuition);
           tuition -= incomePayment;
+          incomePayments.insertCell().textContent = formatter.format(incomePayment);
 
           while (tuition) {
             var candidates = findLowestPriorityResources(resources);
@@ -355,7 +358,7 @@
       </fieldset>
       <fieldset id="resources">
         <label>
-          Amount to be paid annually out of income:
+          Maximum amount to be paid annually out of income:
           <input type="number" required value="0" name="payment-from-income">
         </label>
         <input type="hidden" name="resourcecount" value="0">
@@ -368,6 +371,9 @@
         </tr>
         <tr id="tuitions">
           <th>Cost of attendance</th>
+        </tr>
+        <tr id="incomePayments">
+          <th>Payment out of income</th>
         </tr>
       </table>
       <input type="submit" value="Calculate">
