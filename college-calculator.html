@@ -353,7 +353,9 @@
       <fieldset id="costs">
         <legend>Costs</legend>
         Annual inflation-adjusted tuition increase:
-        <input type="number" required step="0.1" value="6"
+        <!-- https://trends.collegeboard.org/college-pricing/figures-tables/average-rates-growth-published-charges-decade --
+          -- has various numbers; let's default reasonably conservative -->
+        <input type="number" required step="0.1" value="4"
                name="tuition-inflation">%.
       </fieldset>
       <fieldset id="resources">
